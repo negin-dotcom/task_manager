@@ -16,7 +16,6 @@ async def create_task(
     task = Task(
         title=data.title,
         description=data.description,
-        completed=data.completed,
         user_id=current_user.id
     )
 
