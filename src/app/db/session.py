@@ -29,4 +29,4 @@ async def get_db():
         raise 
 
     finally:
-        db.close()
+        await db.close()
