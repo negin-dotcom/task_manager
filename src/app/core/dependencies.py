@@ -29,6 +29,15 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED
         )
 
+    try:
+        user_id = int(user_id)
+
+    except (TypeError, ValueError):
+        raise HTTPException(
+            detail="Invalid authentication credentials.",
+            status_code=status.HTTP_401_UNAUTHORIZED
+        )
+
     result = await db.execute(
         select(User)
         .where(User.id == user_id)
