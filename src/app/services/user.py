@@ -53,11 +53,16 @@ async def get_user_by_id(
 
 
 async def update_user(
-    user: User,
+    user_id: int,
     data: UserUpdate,
     db: AsyncSession
 ) -> User:
-    
+
+    user = await get_user_by_id(user_id, db)
+
+    if user is None:
+        raise ValueError("User not found.")
+
     updated_data = data.model_dump(exclude_unset=True)
 
     for field, value in updated_data.items():
@@ -70,9 +75,14 @@ async def update_user(
 
 
 async def delete_user(
-    user: User,
+    user_id: int,
     db: AsyncSession
 ) -> None:
+
+    user = await get_user_by_id(user_id, db)
+
+    if user is None:
+        raise ValueError("User not found.")
 
     await db.delete(user)
     await db.commit()
