@@ -20,5 +20,5 @@ class TaskResponse(BaseModel):
 
 class TaskUpdate(BaseModel):
     title: str | None = None
-    completed: bool | None = None
     description: str | None = None
+    completed: bool | None = None
