@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.user import User
@@ -20,8 +21,13 @@ async def create_user(
 
     db.add(user)
 
-    await db.commit()
-    await db.refresh(user)
+    try:
+        await db.commit()
+        await db.refresh(user)
+
+    except IntegrityError:
+        await db.rollback()
+        raise
 
     return user
 

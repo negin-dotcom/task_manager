@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services import user as user_service
 
+from sqlalchemy.exc import IntegrityError
+
 
 router = APIRouter(
     tags=["User"]
@@ -58,10 +60,29 @@ async def create_user(
     data: UserCreate,
     db: AsyncSession = Depends(get_db)
 ):
-    return await user_service.create_user(
-        data=data,
-        db=db
-    )
+    try:
+        return await user_service.create_user(
+            data=data,
+            db=db
+        )
+    except IntegrityError as e:
+        error = str(e.orig)
+
+        if "username" in error:
+            raise HTTPException(
+                detail="Username already exists.",
+                status_code=status.HTTP_409_CONFLICT
+            )
+
+        if "email" in error:
+            raise HTTPException(
+                detail="Email already exists.",
+                status_code=status.HTTP_409_CONFLICT
+            )
+            
+
+        raise
+            
 
 
 @router.get("/users/me", 
