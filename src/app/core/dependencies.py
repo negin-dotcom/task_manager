@@ -19,7 +19,14 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db)
 ) -> User:
 
-    payload = decode_access_token(token=token)
+    try:
+        payload = decode_access_token(token=token)
+
+    except ValueError:
+        raise HTTPException(
+            detail="Invalid or expired token.",
+            status_code=status.HTTP_401_UNAUTHORIZED
+        )
 
     user_id = payload.get("sub")
 

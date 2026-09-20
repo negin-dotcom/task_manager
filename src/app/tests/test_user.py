@@ -1,14 +1,19 @@
+from datetime import datetime, timezone
+
 import pytest
 from sqlalchemy import select
 
 from app.db.models.user import User
 from app.tests.conftest import TestSessionLocal 
 
-from app.core.security import decode_access_token, verify_password
+from app.core.security import create_access_token, decode_access_token, verify_password
 
+from jose import jwt
+from app.core.config import settings
 
 
 class TestUserRegistration:
+    """Tests whether users can register successfully."""
 
     # Run this test asynchronously.
     @pytest.mark.anyio
@@ -275,6 +280,7 @@ class TestUserRegistration:
 
 
 class TestUserLogin:
+    """Tests whether users can authenticate successfully."""
 
     @pytest.mark.anyio
     async def test_login_success(self, client):
@@ -409,3 +415,97 @@ class TestUserLogin:
         response = await client.post("/auth/login", data=login_data)
 
         assert response.status_code == 422
+
+
+class TestJWTAuthorization:
+    """Tests whether the application correctly use JWTs to protect endpoints."""
+
+    @pytest.mark.anyio
+    async def test_access_protected_endpoint_with_valid_jwt(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpass123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post(
+            "/users",
+            json=data
+        ) 
+
+        assert response.status_code == 201
+
+        login_data = {
+            "username": response.json()["username"],
+            "password": "testpass123"
+        }
+
+        response = await client.post("/auth/login", data=login_data)
+
+        assert response.status_code == 200
+
+        access_token = response.json()["access_token"]
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        response = await client.get("/users/me", headers=headers)
+
+        assert response.status_code == 200
+
+    @pytest.mark.anyio
+    async def test_access_protected_endpoint_without_jwt(self, client):
+        response = await client.get("/users/me")
+
+        assert response.status_code == 401
+
+    @pytest.mark.anyio
+    async def test_access_protected_endpoint_with_invalid_jwt(self, client):
+        headers = {
+            "Authorization": "Bearer test_invalid_jwt"
+        }
+        response = await client.get("/users/me", headers=headers)
+
+        assert response.status_code == 401
+
+    @pytest.mark.anyio
+    async def test_access_protected_endpoint_with_expired_jwt(self, client):
+        payload = {
+            "sub": "1",
+            "exp": int(datetime.now(timezone.utc).timestamp()) - 60   # 60 seconds ago
+        }
+
+        token = jwt.encode(
+            payload,
+            settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm
+        )
+
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+
+        response = await client.get("/users/me", headers=headers)
+
+        assert response.status_code == 401
+
+    @pytest.mark.anyio
+    async def test_access_protected_endpoint_with_wrong_jwt_secret(self, client):
+        payload = {
+            "sub": "1",
+            "exp": int(datetime.now(timezone.utc).timestamp()) 
+        }
+
+        token = jwt.encode(
+            payload,
+            "some_secret_key",
+            algorithm=settings.jwt_algorithm
+        )
+
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+
+        response = await client.get("/users/me", headers=headers)
+
+        assert response.status_code == 401
