@@ -4,6 +4,8 @@ from sqlalchemy import select
 from app.db.models.user import User
 from app.tests.conftest import TestSessionLocal 
 
+from app.core.security import verify_password
+
 
 class TestUserRegistration:
 
@@ -205,4 +207,66 @@ class TestUserRegistration:
 
             user = result.scalar_one_or_none()
 
+            assert user is not None
             assert user.password != "testpass123"
+            assert verify_password("testpass123", user.password)
+
+    @pytest.mark.anyio
+    async def test_username_min_length(self, client):
+        data = {
+            "username": "u" * 3,
+            "password": "testpass123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post(
+            "/users",
+            json=data
+        ) 
+
+        assert response.status_code == 201
+
+    @pytest.mark.anyio
+    async def test_username_max_length(self, client):
+        data = {
+            "username": "u" * 50,
+            "password": "testpass123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post(
+            "/users",
+            json=data
+        ) 
+
+        assert response.status_code == 201
+
+    @pytest.mark.anyio
+    async def test_password_min_length(self, client):
+        data = {
+            "username": "testuser",
+            "password": "p" * 8,
+            "email": "test@example.com"
+        }
+
+        response = await client.post(
+            "/users",
+            json=data
+        ) 
+
+        assert response.status_code == 201
+
+    @pytest.mark.anyio
+    async def test_password_max_length(self, client):
+        data = {
+            "username": "testuser",
+            "password": "p" * 128,
+            "email": "test@example.com"
+        }
+
+        response = await client.post(
+            "/users",
+            json=data
+        ) 
+
+        assert response.status_code == 201
