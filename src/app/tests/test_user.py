@@ -270,3 +270,132 @@ class TestUserRegistration:
         ) 
 
         assert response.status_code == 201
+
+
+
+class TestUserLogin:
+
+    @pytest.mark.anyio
+    async def test_login_success(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpass123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post("/users", json=data)
+
+        assert response.status_code == 201
+
+        login_data = {
+            "username": response.json()["username"],
+            "password": "testpass123"
+        }
+
+        # Because of oauth, `data` is used rather than `json`.
+        response = await client.post("/auth/login", data=login_data)
+
+        assert response.status_code == 200
+
+        assert "access_token" in response.json()
+        assert response.json()["token_type"] == "bearer"
+
+    @pytest.mark.anyio
+    async def test_user_cannot_login_with_wrong_password(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpass123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post("/users", json=data)
+
+        assert response.status_code == 201
+
+        login_data = {
+            "username": response.json()["username"],
+            "password": "new_pass"
+        }
+
+        response = await client.post("/auth/login", data=login_data)
+        
+        assert response.status_code == 401
+        
+    @pytest.mark.anyio
+    async def test_user_cannot_login_with_nonexistent_username(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpass123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post("/users", json=data)
+
+        assert response.status_code == 201
+
+        login_data = {
+            "username": "new_testuser",
+            "password": "testpass123"
+        }
+
+        response = await client.post("/auth/login", data=login_data)
+                
+        assert response.status_code == 401
+
+    @pytest.mark.anyio
+    async def test_user_cannot_login_with_missing_username(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpass123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post("/users", json=data)
+
+        assert response.status_code == 201
+
+        login_data = {
+            "password": "testpass123"
+        }
+
+        response = await client.post("/auth/login", data=login_data)
+                
+        assert response.status_code == 422
+
+    @pytest.mark.anyio
+    async def test_user_cannot_login_with_missing_password(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpass123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post("/users", json=data)
+
+        assert response.status_code == 201
+
+        login_data = {
+            "username": "testuser"
+        }
+
+        response = await client.post("/auth/login", data=login_data)
+                
+        assert response.status_code == 422
+
+    @pytest.mark.anyio
+    async def test_user_cannot_login_with_empty_request(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpass123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post("/users", json=data)
+
+        assert response.status_code == 201
+
+        login_data = {}
+
+        response = await client.post("/auth/login", data=login_data)
+
+        assert response.status_code == 422
