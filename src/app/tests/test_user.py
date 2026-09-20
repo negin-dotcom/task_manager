@@ -4,7 +4,8 @@ from sqlalchemy import select
 from app.db.models.user import User
 from app.tests.conftest import TestSessionLocal 
 
-from app.core.security import verify_password
+from app.core.security import decode_access_token, verify_password
+
 
 
 class TestUserRegistration:
@@ -287,8 +288,10 @@ class TestUserLogin:
 
         assert response.status_code == 201
 
+        user_data = response.json()
+
         login_data = {
-            "username": response.json()["username"],
+            "username": user_data["username"],
             "password": "testpass123"
         }
 
@@ -297,8 +300,15 @@ class TestUserLogin:
 
         assert response.status_code == 200
 
-        assert "access_token" in response.json()
-        assert response.json()["token_type"] == "bearer"
+        response_data = response.json()
+
+        assert "access_token" in response_data
+        assert response_data["token_type"] == "bearer"
+
+        payload = decode_access_token(token=response_data["access_token"])
+
+        assert "exp" in payload
+        assert payload["sub"] == str(user_data["id"])
 
     @pytest.mark.anyio
     async def test_user_cannot_login_with_wrong_password(self, client):
