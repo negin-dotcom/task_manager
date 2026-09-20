@@ -493,7 +493,7 @@ class TestJWTAuthorization:
     async def test_access_protected_endpoint_with_wrong_jwt_secret(self, client):
         payload = {
             "sub": "1",
-            "exp": int(datetime.now(timezone.utc).timestamp()) 
+            "exp": int(datetime.now(timezone.utc).timestamp()) + 60
         }
 
         token = jwt.encode(
