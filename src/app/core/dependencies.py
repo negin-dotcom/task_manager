@@ -21,8 +21,10 @@ async def get_current_user(
 
     try:
         payload = decode_access_token(token=token)
+        print("payload", payload)
 
-    except ValueError:
+    except ValueError as e:
+        print("error as ", e)
         raise HTTPException(
             detail="Invalid or expired token.",
             status_code=status.HTTP_401_UNAUTHORIZED

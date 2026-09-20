@@ -48,7 +48,8 @@ def decode_access_token(
         payload = jwt.decode(
             token,
             settings.jwt_secret_key,
-            algorithms=[settings.jwt_algorithm]
+            algorithms=[settings.jwt_algorithm],
+            options={"require_exp": True}
         )
 
         return payload

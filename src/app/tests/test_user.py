@@ -509,3 +509,98 @@ class TestJWTAuthorization:
         response = await client.get("/users/me", headers=headers)
 
         assert response.status_code == 401
+
+    @pytest.mark.anyio
+    async def test_access_protected_endpoint_for_nonexistent_user(self, client):
+        payload = {
+            "sub": "999999",
+            "exp": int(datetime.now(timezone.utc).timestamp()) + 60
+        }
+
+        token = jwt.encode(
+            payload,
+            settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm
+        )
+
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+
+        response = await client.get("/users/me", headers=headers)
+
+        assert response.status_code == 401
+
+    @pytest.mark.anyio
+    async def test_access_protected_endpoint_with_missing_sub_in_jwt(self, client):
+        payload = {
+            "exp": int(datetime.now(timezone.utc).timestamp()) + 60
+        }
+
+        token = jwt.encode(
+            payload,
+            settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm
+        )
+
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+
+        response = await client.get("/users/me", headers=headers)
+
+        assert response.status_code == 401
+
+    @pytest.mark.anyio
+    async def test_access_protected_endpoint_with_invalid_sub_in_jwt(self, client):
+        payload = {
+            "sub": "a",
+            "exp": int(datetime.now(timezone.utc).timestamp()) + 60
+        }
+
+        token = jwt.encode(
+            payload,
+            settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm
+        )
+
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+
+        response = await client.get("/users/me", headers=headers)
+
+        assert response.status_code == 401
+
+    @pytest.mark.anyio
+    async def test_access_protected_endpoint_without_exp_in_jwt(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpass123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post(
+            "/users",
+            json=data
+        ) 
+
+        assert response.status_code == 201
+
+        payload = {
+            "sub": str(response.json()["id"]),
+        }
+
+        token = jwt.encode(
+            payload,
+            settings.jwt_secret_key,
+            algorithm=settings.jwt_algorithm
+        )
+
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+
+        response = await client.get("/users/me", headers=headers)
+
+        assert response.status_code == 401
