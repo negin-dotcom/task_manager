@@ -47,6 +47,8 @@ async def get_task_by_id(
             status_code=status.HTTP_404_NOT_FOUND
         )
 
+    return task
+
 
 @router.get("/tasks", 
             response_model=list[TaskResponse])
