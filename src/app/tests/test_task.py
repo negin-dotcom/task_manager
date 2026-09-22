@@ -185,7 +185,6 @@ class TestTasks:
         response = await client.post("/tasks", json=task_data, headers=headers)
         
         assert response.status_code == 201
-        created_task_data = response.json()
         nonexistent_task_id = 999999
 
         response = await client.get(f"/tasks/{nonexistent_task_id}",
@@ -267,3 +266,65 @@ class TestTasks:
                                     headers=headers_2)
                 
         assert response.status_code == 404
+
+    @pytest.mark.anyio
+    async def test_get_all_tasks(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpassword123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post(
+            "/users",
+            json=data
+        ) 
+
+        assert response.status_code == 201
+
+        user_data = response.json()
+
+        login_data = {
+            "username": user_data["username"],
+            "password": "testpassword123"
+        }
+
+        response = await client.post("/auth/login", data=login_data)
+        
+        assert response.status_code == 200
+        response_data = response.json()
+        access_token = response_data["access_token"]
+
+        task_1_data = {
+            "title": "Test Title 1",
+        }
+
+        task_2_data = {
+            "title": "Test Title 2",
+        }
+
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        response = await client.post("/tasks",
+                                      json=task_1_data, 
+                                      headers=headers)
+        assert response.status_code == 201
+
+        response = await client.post("/tasks",
+                                     json=task_2_data, 
+                                     headers=headers)
+        assert response.status_code == 201
+
+        response = await client.get("/tasks",
+                                    headers=headers)
+
+        assert response.status_code == 200
+        response_data = response.json()
+
+        assert len(response_data) == 2
+
+        titles = {task["title"] for task in response_data}
+
+        assert titles == {"Test Title 1", "Test Title 2"}
