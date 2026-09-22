@@ -1,7 +1,7 @@
 from app.core.dependencies import get_current_user
 from app.db.models.user import User
 from app.db.session import get_db
-from fastapi import Depends, APIRouter, status
+from fastapi import Depends, APIRouter, HTTPException, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,11 +35,17 @@ async def get_task_by_id(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return await task_service.get_task_by_id(
+    task = await task_service.get_task_by_id(
         task_id=task_id,
         db=db,
         current_user=current_user
     )
+
+    if task is None:
+        raise HTTPException(
+            detail="Task does not exist.",
+            status_code=status.HTTP_404_NOT_FOUND
+        )
 
 
 @router.get("/tasks", 
