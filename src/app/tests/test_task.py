@@ -797,3 +797,129 @@ class TestTasks:
                                         headers=headers)
 
         assert response.status_code == 422
+
+    @pytest.mark.anyio
+    async def test_delete_task_successfully(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpassword123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post("/users",
+                                        json=data)
+
+        assert response.status_code == 201
+        user_data = response.json()
+
+        login_data = {
+            "username": user_data["username"],
+            "password": "testpassword123"
+        }
+
+        response = await client.post("/auth/login", data=login_data)
+
+        assert response.status_code == 200
+        response_data = response.json()
+        access_token = response_data["access_token"]
+
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        task_data = {
+            "title": "Test Title"
+        }
+
+        response = await client.post("/tasks", 
+                                        json=task_data,
+                                        headers=headers)
+
+        assert response.status_code == 201
+        created_task_data = response.json()
+
+        response = await client.delete(f"/tasks/{created_task_data['id']}",
+                                       headers=headers)
+
+        assert response.status_code == 204
+
+        response = await client.get(f"/tasks/{created_task_data['id']}",
+                                    headers=headers)
+
+        assert response.status_code == 404
+
+    @pytest.mark.anyio
+    async def test_delete_task_belonging_to_another_user(self, client):
+        # ---- User 1 ---------
+        data = {
+            "username": "testuser",
+            "password": "testpassword123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post("/users",
+                                        json=data)
+
+        assert response.status_code == 201
+        user_data = response.json()
+
+        login_data = {
+            "username": user_data["username"],
+            "password": "testpassword123"
+        }
+
+        response = await client.post("/auth/login", data=login_data)
+
+        assert response.status_code == 200
+        response_data = response.json()
+        user_1_access_token = response_data["access_token"]
+
+        headers = {
+            "Authorization": f"Bearer {user_1_access_token}"
+        }
+
+        # ----- User 2 ---------
+        data_2 = {
+            "username": "testuser_2",
+            "password": "testpassword123",
+            "email": "test2@example.com"
+        }
+
+        response = await client.post("/users",
+                                        json=data_2)
+
+        assert response.status_code == 201
+        user_2_data = response.json()
+
+        login_2_data = {
+            "username": user_2_data["username"],
+            "password": "testpassword123"
+        }
+
+        response = await client.post("/auth/login", data=login_2_data)
+
+        assert response.status_code == 200
+        response_data_2 = response.json()
+        user_2_access_token = response_data_2["access_token"]
+
+        headers_2 = {
+            "Authorization": f"Bearer {user_2_access_token}"
+        }
+
+        # ----- Create task as User 2 --------
+        task_data = {
+            "title": "Test Title"
+        }
+
+        response = await client.post("/tasks", 
+                                        json=task_data,
+                                        headers=headers_2)
+
+        assert response.status_code == 201
+        created_task_data = response.json()
+
+        # ----- User 1 tries to delete User 2's task ------
+        response = await client.delete(f"/tasks/{created_task_data['id']}",
+                                       headers=headers)
+
+        assert response.status_code == 404

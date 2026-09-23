@@ -93,8 +93,14 @@ async def delete_task(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    await task_service.delete_task(
+    task = await task_service.delete_task(
         task_id=task_id,
         db=db,
         current_user=current_user
     )
+
+    if task is None:
+        raise HTTPException(
+            detail="Task not found.",
+            status_code=status.HTTP_404_NOT_FOUND
+        )
