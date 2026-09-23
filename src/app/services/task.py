@@ -99,7 +99,7 @@ async def delete_task(
     task_id: int,
     db: AsyncSession,
     current_user: User
-) -> None:
+) -> Task | None:
 
     result = await db.execute(
         select(Task)
@@ -115,6 +115,8 @@ async def delete_task(
     try:
         await db.delete(task)
         await db.commit()
+
+        return task
 
     except Exception:
         await db.rollback()

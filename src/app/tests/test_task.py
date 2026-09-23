@@ -923,3 +923,119 @@ class TestTasks:
                                        headers=headers)
 
         assert response.status_code == 404
+
+    @pytest.mark.anyio
+    async def test_delete_task_without_jwt(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpassword123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post("/users",
+                                        json=data)
+
+        assert response.status_code == 201
+        user_data = response.json()
+
+        login_data = {
+            "username": user_data["username"],
+            "password": "testpassword123"
+        }
+
+        response = await client.post("/auth/login", data=login_data)
+
+        assert response.status_code == 200
+        response_data = response.json()
+        access_token = response_data["access_token"]
+
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        task_data = {
+            "title": "Test Title"
+        }
+
+        response = await client.post("/tasks", 
+                                        json=task_data,
+                                        headers=headers)
+
+        assert response.status_code == 201
+        created_task_data = response.json()
+
+        response = await client.delete(f"/tasks/{created_task_data['id']}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.anyio
+    async def test_delete_nonexistent_task(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpassword123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post("/users",
+                                        json=data)
+
+        assert response.status_code == 201
+        user_data = response.json()
+
+        login_data = {
+            "username": user_data["username"],
+            "password": "testpassword123"
+        }
+
+        response = await client.post("/auth/login", data=login_data)
+
+        assert response.status_code == 200
+        response_data = response.json()
+        access_token = response_data["access_token"]
+
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        nonexistent_task_id = 999999
+
+        response = await client.delete(f"/tasks/{nonexistent_task_id}",
+                                       headers=headers)
+
+        assert response.status_code == 404
+
+    @pytest.mark.anyio
+    async def test_delete_with_invalid_task_id(self, client):
+        data = {
+            "username": "testuser",
+            "password": "testpassword123",
+            "email": "test@example.com"
+        }
+
+        response = await client.post("/users",
+                                        json=data)
+
+        assert response.status_code == 201
+        user_data = response.json()
+
+        login_data = {
+            "username": user_data["username"],
+            "password": "testpassword123"
+        }
+
+        response = await client.post("/auth/login", data=login_data)
+
+        assert response.status_code == 200
+        response_data = response.json()
+        access_token = response_data["access_token"]
+
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        wrong_task_id = "not_a_number"
+
+        response = await client.delete(f"/tasks/{wrong_task_id}",
+                                        headers=headers)
+
+        assert response.status_code == 422
