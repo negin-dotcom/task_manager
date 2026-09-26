@@ -1,5 +1,7 @@
 # Async Task Manager
 
+[![CI](https://github.com/negin-dotcom/task_manager/actions/workflows/ci.yml/badge.svg)](https://github.com/negin-dotcom/task_manager/actions/workflows/ci.yml)
+
 ## A RESTful task management API built with FastAPI, async SQLAlchemy, and PostgreSQL.
 
 ### This project provides user authentication, JWT-based authorization, and task management with user-specific task ownership.
