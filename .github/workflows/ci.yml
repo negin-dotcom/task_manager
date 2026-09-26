@@ -1,0 +1,46 @@
+name: CI
+
+on: 
+  push:
+  pull_request:
+
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres 
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_database
+        ports:
+          - 5432: 5432
+      
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_database
+      TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_database
+      JWT_SECRET_KEY: ci-test-secret 
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+
+    steps:
+      - name: Check out Repository 
+        uses: actions/checkout@v5
+
+      - name: Set up Python 
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run Tests 
+        run: uv run pytest
